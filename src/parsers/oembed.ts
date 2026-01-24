@@ -73,22 +73,51 @@ const parseNumber = (value: unknown): number | undefined => {
 };
 
 /**
+ * Extract thumbnail fields with all-or-nothing validation
+ * Per oEmbed spec, thumbnail_url, thumbnail_width, and thumbnail_height must all be present or none
+ */
+const extractThumbnailFields = (
+  json: Record<string, unknown>
+): {
+  thumbnailUrl?: string;
+  thumbnailWidth?: number;
+  thumbnailHeight?: number;
+} => {
+  const thumbnailUrl = parseString(json.thumbnail_url);
+  const thumbnailWidth = parseNumber(json.thumbnail_width);
+  const thumbnailHeight = parseNumber(json.thumbnail_height);
+
+  // All-or-nothing validation: all three must be present or none
+  if (
+    thumbnailUrl !== undefined &&
+    thumbnailWidth !== undefined &&
+    thumbnailHeight !== undefined
+  ) {
+    return { thumbnailHeight, thumbnailUrl, thumbnailWidth };
+  }
+
+  return {};
+};
+
+/**
  * Extract base oEmbed fields common to all types
  */
 const extractBaseFields = (
   json: Record<string, unknown>
-): Omit<OEmbedData, "type" | "url" | "html" | "width" | "height"> => ({
-  authorName: parseString(json.author_name),
-  authorUrl: parseString(json.author_url),
-  cacheAge: parseNumber(json.cache_age),
-  providerName: parseString(json.provider_name),
-  providerUrl: parseString(json.provider_url),
-  thumbnailHeight: parseNumber(json.thumbnail_height),
-  thumbnailUrl: parseString(json.thumbnail_url),
-  thumbnailWidth: parseNumber(json.thumbnail_width),
-  title: parseString(json.title),
-  version: parseString(json.version) ?? "1.0",
-});
+): Omit<OEmbedData, "type" | "url" | "html" | "width" | "height"> => {
+  const thumbnailFields = extractThumbnailFields(json);
+
+  return {
+    authorName: parseString(json.author_name),
+    authorUrl: parseString(json.author_url),
+    cacheAge: parseNumber(json.cache_age),
+    providerName: parseString(json.provider_name),
+    providerUrl: parseString(json.provider_url),
+    ...thumbnailFields,
+    title: parseString(json.title),
+    version: parseString(json.version) ?? "1.0",
+  };
+};
 
 /**
  * Parse photo-type oEmbed response

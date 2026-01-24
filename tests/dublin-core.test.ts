@@ -120,6 +120,37 @@ describe("extractFromHtml - Dublin Core empty data", () => {
   });
 });
 
+describe("extractFromHtml - Dublin Core DCTERMS extensions", () => {
+  const html = `
+    <!doctype html>
+    <html>
+    <head>
+      <meta name="DC.title" content="Educational Resource" />
+      <meta name="DCTERMS.audience" content="K-12 Students" />
+      <meta name="dcterms.abstract" content="A detailed abstract" />
+      <meta name="DCTERMS.license" content="MIT License" />
+    </head>
+    <body></body>
+    </html>
+  `;
+
+  const result = extractFromHtml(html, {
+    baseUrl: "https://example.com",
+  }) as ExtractSuccess;
+
+  it("extracts DCTERMS.audience as audience field", () => {
+    expect(result.data.dublinCore?.audience).toBe("K-12 Students");
+  });
+
+  it("maps DCTERMS.abstract to description", () => {
+    expect(result.data.dublinCore?.description).toBe("A detailed abstract");
+  });
+
+  it("maps DCTERMS.license to rights", () => {
+    expect(result.data.dublinCore?.rights).toBe("MIT License");
+  });
+});
+
 describe("extractFromHtml - Dublin Core all fields", () => {
   const html = `
     <!doctype html>

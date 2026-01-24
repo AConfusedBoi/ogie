@@ -66,6 +66,14 @@ describe("extractFromHtml - Twitter Card", () => {
     expect(result.data.twitter.creator).toBe("@author");
   });
 
+  it("extracts twitter:site:id", () => {
+    expect(result.data.twitter.siteId).toBe("12345678");
+  });
+
+  it("extracts twitter:creator:id", () => {
+    expect(result.data.twitter.creatorId).toBe("87654321");
+  });
+
   it("extracts twitter:title and description", () => {
     expect(result.data.twitter.title).toBe("Twitter Title");
     expect(result.data.twitter.description).toBe("Twitter Description");

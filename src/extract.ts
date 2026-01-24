@@ -14,15 +14,19 @@ import { fetchUrl } from "./fetch";
 import { parseAppLinks } from "./parsers/app-links";
 import { parseArticle } from "./parsers/article";
 import { parseBasicMeta } from "./parsers/basic";
+import { parseBook } from "./parsers/book";
 import { parseDublinCore } from "./parsers/dublin-core";
 import { parseJsonLd } from "./parsers/jsonld";
+import { parseMusic } from "./parsers/music";
 import {
   hasOEmbedDiscovery,
   parseOEmbedDiscovery,
   parseOEmbedResponse,
 } from "./parsers/oembed";
 import { parseOpenGraph } from "./parsers/opengraph";
+import { parseProfile } from "./parsers/profile";
 import { parseTwitterCard } from "./parsers/twitter";
+import { parseVideo } from "./parsers/video";
 import { isPrivateUrl, isValidUrl } from "./utils/url";
 
 const HTML_INPUT_URL = "html-input";
@@ -42,11 +46,15 @@ interface ParsedHtml {
   appLinks: ReturnType<typeof parseAppLinks>;
   article: ReturnType<typeof parseArticle>;
   basic: ReturnType<typeof parseBasicMeta>;
+  book: ReturnType<typeof parseBook>;
   dublinCore: ReturnType<typeof parseDublinCore>;
   jsonLd: ReturnType<typeof parseJsonLd>;
+  music: ReturnType<typeof parseMusic>;
   oEmbedDiscovery: OEmbedDiscovery;
   og: ReturnType<typeof parseOpenGraph>;
+  profile: ReturnType<typeof parseProfile>;
   twitter: ReturnType<typeof parseTwitterCard>;
+  video: ReturnType<typeof parseVideo>;
 }
 
 const parseHtml = (html: string, baseUrl?: string): ParsedHtml => {
@@ -56,11 +64,15 @@ const parseHtml = (html: string, baseUrl?: string): ParsedHtml => {
     appLinks: parseAppLinks($),
     article: parseArticle($),
     basic: parseBasicMeta($, baseUrl),
+    book: parseBook($),
     dublinCore: parseDublinCore($),
     jsonLd: parseJsonLd($),
+    music: parseMusic($),
     oEmbedDiscovery: parseOEmbedDiscovery($),
     og: parseOpenGraph($, baseUrl),
+    profile: parseProfile($),
     twitter: parseTwitterCard($, baseUrl),
+    video: parseVideo($),
   };
 };
 
@@ -120,8 +132,12 @@ const buildMetadataFromParsed = ({
     dublinCore,
     article,
     appLinks,
+    book,
     jsonLd,
+    music,
     oEmbedDiscovery,
+    profile,
+    video,
   } = parsed;
   const ogWithFallbacks = applyFallbacks(
     og,
@@ -133,17 +149,21 @@ const buildMetadataFromParsed = ({
     appLinks: hasData(appLinks) ? appLinks : undefined,
     article: hasData(article) ? article : undefined,
     basic,
+    book: hasData(book) ? book : undefined,
     charset,
     contentType,
     dublinCore: hasData(dublinCore) ? dublinCore : undefined,
     finalUrl,
     jsonLd: jsonLd.items.length > 0 ? jsonLd : undefined,
+    music: hasData(music) ? music : undefined,
     oEmbed,
     oEmbedDiscovery: hasData(oEmbedDiscovery) ? oEmbedDiscovery : undefined,
     og: ogWithFallbacks,
+    profile: hasData(profile) ? profile : undefined,
     requestUrl,
     statusCode,
     twitter,
+    video: hasData(video) ? video : undefined,
   };
 };
 

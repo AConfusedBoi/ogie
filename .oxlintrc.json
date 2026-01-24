@@ -4,6 +4,8 @@
   "rules": {
     // Allow top-level "import type { X }" syntax instead of inline "import { type X }"
     // This avoids conflicts with no-import-type-side-effects rule
-    "import/consistent-type-specifier-style": "off"
+    "import/consistent-type-specifier-style": "off",
+    // Allow lowercase hex literals in BOM signatures and byte arrays for readability
+    "unicorn/number-literal-case": "off"
   }
 }

@@ -59,7 +59,15 @@ export type {
 
 export type { ArticleData } from "./parsers/article";
 
+export type { BookData } from "./parsers/book";
+
 export type { DublinCoreData } from "./parsers/dublin-core";
+
+export type { MusicAlbumRef, MusicData, MusicSongRef } from "./parsers/music";
+
+export type { ProfileData, ProfileGender } from "./parsers/profile";
+
+export type { VideoActor, VideoData } from "./parsers/video";
 
 export type {
   JsonLdData,

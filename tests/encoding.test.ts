@@ -66,7 +66,7 @@ describe("detectCharset", () => {
 
   describe("BOM detection", () => {
     it("detects UTF-8 BOM", () => {
-      const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+      const bom = new Uint8Array([0xef, 0xbb, 0xbf]);
       const content = encoder.encode("<html></html>");
       const combined = new Uint8Array([...bom, ...content]);
 
@@ -77,7 +77,7 @@ describe("detectCharset", () => {
     });
 
     it("detects UTF-16 LE BOM", () => {
-      const bom = new Uint8Array([0xFF, 0xFE]);
+      const bom = new Uint8Array([0xff, 0xfe]);
       const result = detectCharset(bom.buffer);
 
       expect(result.charset).toBe("utf-16le");
@@ -85,7 +85,7 @@ describe("detectCharset", () => {
     });
 
     it("detects UTF-16 BE BOM", () => {
-      const bom = new Uint8Array([0xFE, 0xFF]);
+      const bom = new Uint8Array([0xfe, 0xff]);
       const result = detectCharset(bom.buffer);
 
       expect(result.charset).toBe("utf-16be");
@@ -93,7 +93,7 @@ describe("detectCharset", () => {
     });
 
     it("detects UTF-32 LE BOM", () => {
-      const bom = new Uint8Array([0xFF, 0xFE, 0x00, 0x00]);
+      const bom = new Uint8Array([0xff, 0xfe, 0x00, 0x00]);
       const result = detectCharset(bom.buffer);
 
       expect(result.charset).toBe("utf-32le");
@@ -101,7 +101,7 @@ describe("detectCharset", () => {
     });
 
     it("detects UTF-32 BE BOM", () => {
-      const bom = new Uint8Array([0x00, 0x00, 0xFE, 0xFF]);
+      const bom = new Uint8Array([0x00, 0x00, 0xfe, 0xff]);
       const result = detectCharset(bom.buffer);
 
       expect(result.charset).toBe("utf-32be");
@@ -110,12 +110,12 @@ describe("detectCharset", () => {
 
     it("distinguishes UTF-32 LE from UTF-16 LE", () => {
       // UTF-32 LE BOM: FF FE 00 00
-      const utf32le = new Uint8Array([0xFF, 0xFE, 0x00, 0x00]);
+      const utf32le = new Uint8Array([0xff, 0xfe, 0x00, 0x00]);
       const result32 = detectCharset(utf32le.buffer);
       expect(result32.charset).toBe("utf-32le");
 
       // UTF-16 LE BOM: FF FE (followed by non-null bytes)
-      const utf16le = new Uint8Array([0xFF, 0xFE, 0x41, 0x00]);
+      const utf16le = new Uint8Array([0xff, 0xfe, 0x41, 0x00]);
       const result16 = detectCharset(utf16le.buffer);
       expect(result16.charset).toBe("utf-16le");
     });
@@ -232,14 +232,14 @@ describe("decodeHtml", () => {
 
   it("decodes ISO-8859-1 content", () => {
     // ISO-8859-1: byte 0xE9 = é
-    const { buffer } = new Uint8Array([0x63, 0x61, 0x66, 0xE9]);
+    const { buffer } = new Uint8Array([0x63, 0x61, 0x66, 0xe9]);
 
     expect(decodeHtml(buffer, "iso-8859-1")).toBe("café");
   });
 
   it("decodes Shift_JIS content", () => {
     // Shift_JIS encoding for Japanese text "日本語"
-    const shiftJisBytes = new Uint8Array([0x93, 0xFA, 0x96, 0x7B, 0x8C, 0xEA]);
+    const shiftJisBytes = new Uint8Array([0x93, 0xfa, 0x96, 0x7b, 0x8c, 0xea]);
     const { buffer } = shiftJisBytes;
 
     expect(decodeHtml(buffer, "shift_jis")).toBe("日本語");
@@ -254,7 +254,7 @@ describe("decodeHtml", () => {
   });
 
   it("handles latin1 alias", () => {
-    const { buffer } = new Uint8Array([0x48, 0x65, 0x6C, 0x6C, 0x6F]);
+    const { buffer } = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
 
     expect(decodeHtml(buffer, "latin1")).toBe("Hello");
   });
@@ -266,7 +266,7 @@ describe("decodeHtml", () => {
     // 0x97 = em-dash
     // 0x92 = right single quote
     const win1252Bytes = new Uint8Array([
-      0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x97, 0x93, 0x57, 0x6F, 0x72, 0x6C, 0x64,
+      0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x97, 0x93, 0x57, 0x6f, 0x72, 0x6c, 0x64,
       0x94,
     ]);
     const { buffer } = win1252Bytes;

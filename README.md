@@ -10,7 +10,7 @@ A comprehensive metadata extraction library that pulls OpenGraph, Twitter Cards,
 
 ## ✨ Features
 
-- 🎯 **Comprehensive Extraction** — OpenGraph, Twitter Cards, JSON-LD, Dublin Core, Article metadata, App Links, oEmbed
+- 🎯 **Comprehensive Extraction** — OpenGraph, Twitter Cards, JSON-LD, Dublin Core, Article, Video, Music, Book, Profile, App Links, oEmbed
 - 🚀 **High Performance** — LRU caching with TTL, bulk extraction with smart rate limiting
 - 🔒 **Secure by Default** — SSRF protection, private IP blocking, URL validation
 - 📦 **Minimal Dependencies** — Just 4 production deps (cheerio, quick-lru, bottleneck, iconv-lite)
@@ -217,51 +217,67 @@ console.log(key1 === key3); // false
 
 ## 📊 Extracted Metadata
 
-Ogie extracts metadata from **8 different sources**:
+Ogie extracts metadata from **12 different sources**:
 
 ### 🌐 OpenGraph (`data.og`)
+
+Core OpenGraph metadata for any page type.
 
 ```typescript
 {
   title: "Page Title",
   description: "Page description",
-  type: "website", // website, article, video.movie, etc.
+  type: "website", // website, article, video.movie, music.song, book, profile, etc.
   url: "https://example.com",
   siteName: "Example",
   locale: "en_US",
   localeAlternate: ["es_ES", "fr_FR"],
   determiner: "the",
   images: [
-    { url: "https://...", width: 1200, height: 630, alt: "..." }
+    { url: "https://...", width: 1200, height: 630, alt: "...", secureUrl: "https://...", type: "image/jpeg" }
   ],
   videos: [
-    { url: "https://...", width: 1280, height: 720, type: "video/mp4" }
+    { url: "https://...", width: 1280, height: 720, type: "video/mp4", secureUrl: "https://..." }
   ],
   audio: [
-    { url: "https://...", type: "audio/mpeg" }
+    { url: "https://...", type: "audio/mpeg", secureUrl: "https://..." }
   ],
 }
 ```
 
 ### 🐦 Twitter Cards (`data.twitter`)
 
+Twitter/X card metadata with full support for all card types.
+
 ```typescript
 {
   card: "summary_large_image", // summary, summary_large_image, app, player
   site: "@github",
+  siteId: "13334762",          // Numeric user ID
   creator: "@username",
+  creatorId: "12345678",       // Numeric user ID
   title: "Card Title",
   description: "Card description",
   image: { url: "https://...", alt: "Image description" },
-  player: { url: "https://...", width: 640, height: 360 },
+  player: {
+    url: "https://...",
+    width: 640,
+    height: 360,
+    stream: "https://...",
+    streamContentType: "video/mp4"
+  },
   app: {
     iphone: { id: "123456", url: "app://...", name: "App Name" },
-    googleplay: { id: "com.example", url: "app://..." }
+    ipad: { id: "123456", url: "app://..." },
+    googleplay: { id: "com.example", url: "app://..." },
+    country: "US"
   },
 }
 ```
 
 ### 📝 Basic Meta (`data.basic`)
+
+Standard HTML meta tags and document information.
 
 ```typescript
 {
@@ -271,34 +287,117 @@ Ogie extracts metadata from **8 different sources**:
   favicon: "https://example.com/favicon.ico",
   favicons: [
     { url: "...", rel: "icon", sizes: "32x32", type: "image/png" },
-    { url: "...", rel: "apple-touch-icon", sizes: "180x180" }
+    { url: "...", rel: "apple-touch-icon", sizes: "180x180" },
+    { url: "...", rel: "mask-icon", color: "#000000" }
   ],
   manifestUrl: "https://example.com/manifest.json",
   author: "John Doe",
+  charset: "utf-8",
   keywords: "web, metadata, scraping",
   robots: "index, follow",
   viewport: "width=device-width, initial-scale=1",
   themeColor: "#ffffff",
   generator: "Next.js",
   applicationName: "My App",
+  referrer: "origin-when-cross-origin",
 }
 ```
 
 ### 📰 Article (`data.article`)
+
+Article-specific metadata for `og:type="article"` pages.
 
 ```typescript
 {
   publishedTime: "2024-01-15T10:00:00Z",
   modifiedTime: "2024-01-16T12:00:00Z",
   expirationTime: "2025-01-15T10:00:00Z",
-  author: ["Jane Doe", "John Smith"],
+  author: ["https://example.com/author/jane"],
   section: "Technology",
   tags: ["javascript", "typescript", "web"],
-  publisher: "Tech Blog",
+  publisher: "Tech Blog", // Non-standard but commonly used
+}
+```
+
+### 🎬 Video (`data.video`)
+
+Video metadata for `og:type="video.*"` pages (movie, episode, tv_show, other).
+
+```typescript
+{
+  actors: [
+    { url: "https://example.com/actor/john", role: "John Smith" },
+    { url: "https://example.com/actor/jane", role: "Jane Doe" }
+  ],
+  directors: ["https://example.com/director/spielberg"],
+  writers: ["https://example.com/writer/alice"],
+  duration: 7200,              // Length in seconds (integer >= 1)
+  releaseDate: "2024-06-15",   // ISO 8601 datetime
+  tags: ["Action", "Thriller"],
+  series: "https://example.com/series/breaking-bad", // For video.episode
+}
+```
+
+### 🎵 Music (`data.music`)
+
+Music metadata for `og:type="music.*"` pages (song, album, playlist, radio_station).
+
+```typescript
+// For music.song:
+{
+  duration: 245,               // Length in seconds (integer >= 1)
+  albums: [
+    { url: "https://example.com/album/1", disc: 1, track: 5 }
+  ],
+  musicians: ["https://example.com/artist/beatles"],
+}
+
+// For music.album:
+{
+  songs: [
+    { url: "https://example.com/song/1", disc: 1, track: 1 },
+    { url: "https://example.com/song/2", disc: 1, track: 2 }
+  ],
+  musicians: ["https://example.com/artist/beatles"],
+  releaseDate: "1969-09-26",
+}
+
+// For music.playlist or music.radio_station:
+{
+  songs: [{ url: "https://example.com/song/1" }],
+  creator: "https://example.com/user/john",
+}
+```
+
+### 📚 Book (`data.book`)
+
+Book metadata for `og:type="book"` pages.
+
+```typescript
+{
+  authors: ["https://example.com/author/harper-lee"],
+  isbn: "978-0-06-112008-4",
+  releaseDate: "1960-07-11",
+  tags: ["Classic", "Literature", "Fiction"],
+}
+```
+
+### 👤 Profile (`data.profile`)
+
+Profile metadata for `og:type="profile"` pages.
+
+```typescript
+{
+  firstName: "Jane",
+  lastName: "Doe",
+  username: "janedoe",
+  gender: "female",  // Only "male" or "female" per OpenGraph spec
 }
 ```
 
 ### 🔗 JSON-LD (`data.jsonLd`)
+
+Structured data with full @id reference resolution.
 
 ```typescript
 {
@@ -307,19 +406,49 @@ Ogie extracts metadata from **8 different sources**:
       type: "Article",
       name: "Article Title",
       description: "Article description",
+      url: "https://example.com/article",
       datePublished: "2024-01-15",
-      author: { type: "Person", name: "Jane Doe", url: "https://..." },
-      publisher: { type: "Organization", name: "Publisher", logo: "..." },
+      dateModified: "2024-01-16",
+      author: {
+        type: "Person",
+        name: "Jane Doe",
+        url: "https://example.com/author/jane"
+      },
+      publisher: {
+        type: "Organization",
+        name: "Tech Blog",
+        logo: "https://example.com/logo.png"
+      },
+      image: "https://example.com/image.jpg",
+      // All other properties preserved
     }
   ],
   raw: [/* Original parsed JSON-LD objects */],
 }
 ```
 
-### 📚 Dublin Core (`data.dublinCore`)
+**🔄 @id Reference Resolution:** Ogie automatically resolves JSON-LD references:
+
+```html
+<script type="application/ld+json">
+  {
+    "@graph": [
+      { "@id": "#author", "@type": "Person", "name": "Jane Doe" },
+      { "@type": "Article", "author": { "@id": "#author" } }
+    ]
+  }
+</script>
+```
+
+The `author` reference is automatically resolved to the full Person object.
+
+### 📜 Dublin Core (`data.dublinCore`)
+
+Dublin Core Metadata Element Set (DCMES 1.1) plus DCTERMS extensions.
 
 ```typescript
 {
+  // Core DCMES 1.1 elements
   title: "Document Title",
   creator: ["Author Name"],
   subject: ["Topic 1", "Topic 2"],
@@ -330,41 +459,106 @@ Ogie extracts metadata from **8 different sources**:
   type: "Text",
   format: "text/html",
   identifier: "ISBN:1234567890",
+  source: "https://original-source.com",
   language: "en",
+  relation: "https://related-document.com",
+  coverage: "Global",
   rights: "CC BY 4.0",
+
+  // DCTERMS extension
+  audience: "General Public",
 }
 ```
 
 ### 📱 App Links (`data.appLinks`)
 
+Facebook App Links for deep linking to mobile apps.
+
 ```typescript
 {
-  ios: [{ url: "app://...", appStoreId: "123456", appName: "My App" }],
-  iphone: [{ url: "app://...", appStoreId: "123456" }],
-  android: [{ url: "app://...", package: "com.example.app", appName: "My App" }],
-  web: [{ url: "https://...", shouldFallback: true }],
+  ios: [
+    { url: "app://...", appStoreId: "123456", appName: "My App" }
+  ],
+  iphone: [
+    { url: "app://...", appStoreId: "123456" }
+  ],
+  ipad: [
+    { url: "app://...", appStoreId: "123456" }
+  ],
+  android: [
+    { url: "app://...", package: "com.example.app", appName: "My App", class: "MainActivity" }
+  ],
+  windows: [
+    { url: "app://...", appId: "App.Id", appName: "My App" }
+  ],
+  web: [
+    { url: "https://...", shouldFallback: true }
+  ],
 }
 ```
 
-### 🎬 oEmbed (`data.oEmbed`)
+### 🎞️ oEmbed (`data.oEmbed`)
 
-Populated when `fetchOEmbed: true` is set:
+oEmbed data (populated when `fetchOEmbed: true`). Thumbnail fields use all-or-nothing validation per spec.
 
 ```typescript
+// Photo type
 {
-  type: "video", // photo, video, link, rich
+  type: "photo",
+  version: "1.0",
+  title: "Photo Title",
+  url: "https://example.com/photo.jpg",
+  width: 1200,
+  height: 800,
+  authorName: "Photographer",
+  authorUrl: "https://...",
+  providerName: "Flickr",
+  providerUrl: "https://flickr.com",
+  thumbnailUrl: "https://...",      // All three must be present
+  thumbnailWidth: 150,              // or none will be included
+  thumbnailHeight: 100,
+  cacheAge: 86400,
+}
+
+// Video type
+{
+  type: "video",
   version: "1.0",
   title: "Video Title",
+  html: "<iframe ...></iframe>",
+  width: 640,
+  height: 360,
   authorName: "Channel Name",
   authorUrl: "https://...",
   providerName: "YouTube",
   providerUrl: "https://youtube.com",
-  html: "<iframe ...></iframe>",
-  width: 640,
-  height: 360,
-  thumbnailUrl: "https://...",
-  thumbnailWidth: 480,
-  thumbnailHeight: 360,
+}
+
+// Rich type
+{
+  type: "rich",
+  version: "1.0",
+  html: "<blockquote>...</blockquote>",
+  width: 550,
+  height: 200,
+}
+
+// Link type
+{
+  type: "link",
+  version: "1.0",
+  title: "Link Title",
+}
+```
+
+### 🔍 oEmbed Discovery (`data.oEmbedDiscovery`)
+
+Discovered oEmbed endpoints (always populated, fetch controlled by `fetchOEmbed` option).
+
+```typescript
+{
+  jsonUrl: "https://example.com/oembed?url=...&format=json",
+  xmlUrl: "https://example.com/oembed?url=...&format=xml",
 }
 ```
 
@@ -460,14 +654,92 @@ if (!result.success) {
 | `FetchError` | Network/HTTP errors | `statusCode`           |
 | `ParseError` | HTML parsing errors | —                      |
 
+## 📦 Exported Types
+
+All types are exported for use in your TypeScript code:
+
+```typescript
+import type {
+  // Core types
+  Metadata,
+  ExtractResult,
+  ExtractSuccess,
+  ExtractFailure,
+  ExtractOptions,
+
+  // OpenGraph types
+  OpenGraphData,
+  OpenGraphImage,
+  OpenGraphVideo,
+  OpenGraphAudio,
+
+  // Twitter Card types
+  TwitterCardData,
+  TwitterCardType,
+  TwitterImage,
+  TwitterPlayer,
+  TwitterApp,
+  TwitterAppPlatform,
+
+  // Basic meta types
+  BasicMetaData,
+  FaviconData,
+
+  // Type-specific metadata
+  ArticleData,
+  VideoData,
+  VideoActor,
+  MusicData,
+  MusicAlbumRef,
+  MusicSongRef,
+  BookData,
+  ProfileData,
+  ProfileGender,
+
+  // Structured data types
+  JsonLdData,
+  JsonLdItem,
+  JsonLdPerson,
+  JsonLdOrganization,
+  DublinCoreData,
+
+  // App Links types
+  AppLinksData,
+  AppLinkPlatform,
+  AppLinksWeb,
+
+  // oEmbed types
+  OEmbedData,
+  OEmbedType,
+  OEmbedPhoto,
+  OEmbedVideo,
+  OEmbedRich,
+  OEmbedLink,
+  OEmbedDiscovery,
+
+  // Cache types
+  MetadataCache,
+  CacheOptions,
+
+  // Bulk types
+  BulkOptions,
+  BulkResult,
+  BulkResultItem,
+  BulkProgress,
+
+  // Error types
+  ErrorCode,
+} from "ogie";
+```
+
 ## 🔐 Security
 
 Ogie includes built-in security protections:
 
-- **🛡️ SSRF Protection** — Blocks requests to private/internal IP ranges by default
-- **🔗 URL Validation** — Only allows HTTP/HTTPS protocols
-- **🔄 Redirect Limits** — Configurable max redirects (default: 5)
-- **✅ oEmbed Validation** — Validates oEmbed endpoints before fetching
+- 🛡️ **SSRF Protection** — Blocks requests to private/internal IP ranges by default
+- 🔗 **URL Validation** — Only allows HTTP/HTTPS protocols
+- 🔄 **Redirect Limits** — Configurable max redirects (default: 5)
+- ✅ **oEmbed Validation** — Validates oEmbed endpoints before fetching
 
 ```typescript
 // Allow private URLs (for testing/development only)
@@ -475,16 +747,6 @@ await extract("http://localhost:3000", {
   allowPrivateUrls: true,
 });
 ```
-
-## 📦 Bundle Size
-
-| Dependency | Size (gzip) | Purpose            |
-| ---------- | ----------- | ------------------ |
-| cheerio    | ~70 KB      | HTML parsing       |
-| quick-lru  | ~0.5 KB     | LRU cache with TTL |
-| bottleneck | ~12 KB      | Rate limiting      |
-| iconv-lite | ~45 KB      | Charset detection  |
-| **Total**  | **~130 KB** |                    |
 
 ## 🧪 Testing
 
@@ -505,6 +767,4 @@ MIT © [Dobroslav Radosavljevic](https://github.com/dobroslavradosavljevic)
 
 ---
 
-<p align="center">
-  Made with ❤️ for the web scraping community
-</p>
+Made with ❤️ for the web scraping community

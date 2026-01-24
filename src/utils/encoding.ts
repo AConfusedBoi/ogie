@@ -54,11 +54,11 @@ export const parseContentTypeCharset = (
  * UTF-32 LE (FF FE 00 00) must be checked before UTF-16 LE (FF FE)
  */
 const BOM_SIGNATURES: { bytes: number[]; charset: string }[] = [
-  { bytes: [0xEF, 0xBB, 0xBF], charset: "utf8" },
-  { bytes: [0xFF, 0xFE, 0x00, 0x00], charset: "utf-32le" },
-  { bytes: [0x00, 0x00, 0xFE, 0xFF], charset: "utf-32be" },
-  { bytes: [0xFF, 0xFE], charset: "utf-16le" },
-  { bytes: [0xFE, 0xFF], charset: "utf-16be" },
+  { bytes: [0xef, 0xbb, 0xbf], charset: "utf8" },
+  { bytes: [0xff, 0xfe, 0x00, 0x00], charset: "utf-32le" },
+  { bytes: [0x00, 0x00, 0xfe, 0xff], charset: "utf-32be" },
+  { bytes: [0xff, 0xfe], charset: "utf-16le" },
+  { bytes: [0xfe, 0xff], charset: "utf-16be" },
 ];
 
 /**

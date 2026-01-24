@@ -39,6 +39,7 @@ interface ImageObject {
 interface RawJsonLd {
   "@context"?: string | string[] | Record<string, unknown>;
   "@type"?: string | string[];
+  "@id"?: string;
   "@graph"?: RawJsonLd[];
   name?: string;
   headline?: string;
@@ -50,10 +51,14 @@ interface RawJsonLd {
   dateModified?: string;
   author?:
     | string
-    | { "@type"?: string; name?: string; url?: string }
-    | Array<string | { "@type"?: string; name?: string; url?: string }>;
+    | { "@type"?: string; "@id"?: string; name?: string; url?: string }
+    | Array<
+        | string
+        | { "@type"?: string; "@id"?: string; name?: string; url?: string }
+      >;
   publisher?: {
     "@type"?: string;
+    "@id"?: string;
     name?: string;
     url?: string;
     logo?: string | { url?: string; "@id"?: string };
@@ -63,6 +68,40 @@ interface RawJsonLd {
   sameAs?: string | string[];
   [key: string]: unknown;
 }
+
+type IdMap = Map<string, RawJsonLd>;
+
+const buildIdMap = (items: RawJsonLd[]): IdMap => {
+  const map = new Map<string, RawJsonLd>();
+  for (const item of items) {
+    const id = item["@id"];
+    if (id) {
+      map.set(id, item);
+    }
+  }
+  return map;
+};
+
+const isIdReference = (val: unknown): val is { "@id": string } => {
+  if (typeof val !== "object" || val === null) {
+    return false;
+  }
+  const keys = Object.keys(val);
+  return keys.length === 1 && "@id" in val;
+};
+
+const resolveReference = <T>(
+  val: T | { "@id": string },
+  idMap: IdMap
+): T | RawJsonLd => {
+  if (isIdReference(val)) {
+    const resolved = idMap.get(val["@id"]);
+    if (resolved) {
+      return resolved;
+    }
+  }
+  return val as T;
+};
 
 const parseJsonSafe = (text: string): unknown | undefined => {
   try {
@@ -161,55 +200,83 @@ const normalizePerson = (
 const normalizeAuthor = (
   rawAuthor:
     | string
-    | { "@type"?: string; name?: string; url?: string }
-    | Array<string | { "@type"?: string; name?: string; url?: string }>
-    | undefined
+    | { "@type"?: string; "@id"?: string; name?: string; url?: string }
+    | Array<
+        | string
+        | { "@type"?: string; "@id"?: string; name?: string; url?: string }
+      >
+    | undefined,
+  idMap: IdMap
 ): JsonLdPerson | JsonLdPerson[] | undefined => {
   if (!rawAuthor) {
     return undefined;
   }
   if (Array.isArray(rawAuthor)) {
     const persons = rawAuthor
-      .map((a) => normalizePerson(a))
+      .map((a) => {
+        if (typeof a === "string") {
+          return normalizePerson(a);
+        }
+        const resolved = resolveReference(a, idMap);
+        return normalizePerson(
+          resolved as { "@type"?: string; name?: string; url?: string }
+        );
+      })
       .filter((p): p is JsonLdPerson => p !== undefined);
     return persons.length > 0 ? persons : undefined;
   }
-  return normalizePerson(rawAuthor);
+  if (typeof rawAuthor === "string") {
+    return normalizePerson(rawAuthor);
+  }
+  const resolved = resolveReference(rawAuthor, idMap);
+  return normalizePerson(
+    resolved as { "@type"?: string; name?: string; url?: string }
+  );
 };
 
 const normalizePublisher = (
   rawPublisher:
     | {
         "@type"?: string;
+        "@id"?: string;
         name?: string;
         url?: string;
         logo?: string | { url?: string; "@id"?: string };
       }
-    | undefined
+    | undefined,
+  idMap: IdMap
 ): JsonLdOrganization | JsonLdPerson | undefined => {
   if (!rawPublisher) {
     return undefined;
   }
 
+  // Resolve @id reference if present
+  const resolved = resolveReference(rawPublisher, idMap) as {
+    "@type"?: string;
+    name?: string;
+    url?: string;
+    logo?: string | { url?: string; "@id"?: string };
+  };
+
   // Handle Person publisher
-  if (rawPublisher["@type"] === "Person") {
+  if (resolved["@type"] === "Person") {
     return {
-      name: rawPublisher.name,
+      name: resolved.name,
       type: "Person",
-      url: rawPublisher.url,
+      url: resolved.url,
     };
   }
 
   // Handle Organization publisher (default)
   const logo =
-    typeof rawPublisher.logo === "string"
-      ? rawPublisher.logo
-      : (rawPublisher.logo?.url ?? rawPublisher.logo?.["@id"]);
+    typeof resolved.logo === "string"
+      ? resolved.logo
+      : (resolved.logo?.url ?? resolved.logo?.["@id"]);
   return {
     logo,
-    name: rawPublisher.name,
+    name: resolved.name,
     type: "Organization",
-    url: rawPublisher.url,
+    url: resolved.url,
   };
 };
 
@@ -246,11 +313,11 @@ const normalizeBasicFields = (
   url: raw.url,
 });
 
-const normalizeItem = (raw: RawJsonLd): JsonLdItem => {
+const normalizeItem = (raw: RawJsonLd, idMap: IdMap): JsonLdItem => {
   const basicFields = normalizeBasicFields(raw);
   const image = normalizeImage(raw.image);
-  const author = normalizeAuthor(raw.author);
-  const publisher = normalizePublisher(raw.publisher);
+  const author = normalizeAuthor(raw.author, idMap);
+  const publisher = normalizePublisher(raw.publisher, idMap);
 
   const item: JsonLdItem = {
     ...basicFields,
@@ -287,26 +354,33 @@ const extractItems = (parsed: unknown): RawJsonLd[] => {
   return obj["@type"] ? [obj] : [];
 };
 
+const processJsonLdScript = (
+  text: string,
+  raw: unknown[],
+  items: JsonLdItem[]
+): void => {
+  const parsed = parseJsonSafe(text);
+  if (parsed === undefined) {
+    return;
+  }
+
+  raw.push(parsed);
+
+  const extractedItems = extractItems(parsed);
+  const idMap = buildIdMap(extractedItems);
+  for (const item of extractedItems) {
+    items.push(normalizeItem(item, idMap));
+  }
+};
+
 export const parseJsonLd = ($: CheerioAPI): JsonLdData => {
   const raw: unknown[] = [];
   const items: JsonLdItem[] = [];
 
   $('script[type="application/ld+json"]').each((_, el) => {
     const text = $(el).text();
-    if (!text) {
-      return;
-    }
-
-    const parsed = parseJsonSafe(text);
-    if (parsed === undefined) {
-      return;
-    }
-
-    raw.push(parsed);
-
-    const extractedItems = extractItems(parsed);
-    for (const item of extractedItems) {
-      items.push(normalizeItem(item));
+    if (text) {
+      processJsonLdScript(text, raw, items);
     }
   });
 

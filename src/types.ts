@@ -6,8 +6,12 @@ import type { MetadataCache } from "./cache";
 import type { OgieError } from "./errors";
 import type { AppLinksData } from "./parsers/app-links";
 import type { ArticleData } from "./parsers/article";
+import type { BookData } from "./parsers/book";
 import type { DublinCoreData } from "./parsers/dublin-core";
 import type { JsonLdData } from "./parsers/jsonld";
+import type { MusicData } from "./parsers/music";
+import type { ProfileData } from "./parsers/profile";
+import type { VideoData } from "./parsers/video";
 
 // =============================================================================
 // oEmbed Types
@@ -322,8 +326,14 @@ export interface TwitterCardData {
   /** twitter:site - The username of the website (e.g., "@example") */
   site?: string;
 
+  /** twitter:site:id - The numeric user ID of the website */
+  siteId?: string;
+
   /** twitter:creator - The username of the content creator (e.g., "@author") */
   creator?: string;
+
+  /** twitter:creator:id - The numeric user ID of the content creator */
+  creatorId?: string;
 
   /** twitter:title - Title of the content */
   title?: string;
@@ -444,8 +454,20 @@ export interface Metadata {
   /** Article metadata (for og:type="article") */
   article?: ArticleData;
 
+  /** Book metadata (for og:type="book") */
+  book?: BookData;
+
   /** Dublin Core metadata */
   dublinCore?: DublinCoreData;
+
+  /** Music metadata (for og:type="music.*") */
+  music?: MusicData;
+
+  /** Profile metadata (for og:type="profile") */
+  profile?: ProfileData;
+
+  /** Video metadata (for og:type="video.*") */
+  video?: VideoData;
 
   /** JSON-LD structured data */
   jsonLd?: JsonLdData;

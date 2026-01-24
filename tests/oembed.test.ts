@@ -277,6 +277,102 @@ describe("parseOEmbedResponse - Non-string type field", () => {
   });
 });
 
+describe("parseOEmbedResponse - Thumbnail all-or-nothing validation", () => {
+  it("includes all thumbnail fields when all are present", () => {
+    const json = {
+      height: 600,
+      thumbnail_height: 150,
+      thumbnail_url: "https://example.com/thumb.jpg",
+      thumbnail_width: 200,
+      type: "photo",
+      url: "https://example.com/photo.jpg",
+      version: "1.0",
+      width: 800,
+    };
+    const result = parseOEmbedResponse(json);
+    expect(result?.thumbnailUrl).toBe("https://example.com/thumb.jpg");
+    expect(result?.thumbnailWidth).toBe(200);
+    expect(result?.thumbnailHeight).toBe(150);
+  });
+
+  it("excludes all thumbnail fields when only thumbnail_url is present", () => {
+    const json = {
+      height: 600,
+      thumbnail_url: "https://example.com/thumb.jpg",
+      type: "photo",
+      url: "https://example.com/photo.jpg",
+      version: "1.0",
+      width: 800,
+    };
+    const result = parseOEmbedResponse(json);
+    expect(result?.thumbnailUrl).toBeUndefined();
+    expect(result?.thumbnailWidth).toBeUndefined();
+    expect(result?.thumbnailHeight).toBeUndefined();
+  });
+
+  it("excludes all thumbnail fields when only thumbnail_url and thumbnail_width are present", () => {
+    const json = {
+      height: 600,
+      thumbnail_url: "https://example.com/thumb.jpg",
+      thumbnail_width: 200,
+      type: "photo",
+      url: "https://example.com/photo.jpg",
+      version: "1.0",
+      width: 800,
+    };
+    const result = parseOEmbedResponse(json);
+    expect(result?.thumbnailUrl).toBeUndefined();
+    expect(result?.thumbnailWidth).toBeUndefined();
+    expect(result?.thumbnailHeight).toBeUndefined();
+  });
+
+  it("excludes all thumbnail fields when only thumbnail_height is present", () => {
+    const json = {
+      height: 600,
+      thumbnail_height: 150,
+      type: "photo",
+      url: "https://example.com/photo.jpg",
+      version: "1.0",
+      width: 800,
+    };
+    const result = parseOEmbedResponse(json);
+    expect(result?.thumbnailUrl).toBeUndefined();
+    expect(result?.thumbnailWidth).toBeUndefined();
+    expect(result?.thumbnailHeight).toBeUndefined();
+  });
+
+  it("excludes all thumbnail fields when thumbnail_width and thumbnail_height are present but no url", () => {
+    const json = {
+      height: 600,
+      thumbnail_height: 150,
+      thumbnail_width: 200,
+      type: "photo",
+      url: "https://example.com/photo.jpg",
+      version: "1.0",
+      width: 800,
+    };
+    const result = parseOEmbedResponse(json);
+    expect(result?.thumbnailUrl).toBeUndefined();
+    expect(result?.thumbnailWidth).toBeUndefined();
+    expect(result?.thumbnailHeight).toBeUndefined();
+  });
+
+  it("includes thumbnail fields for link type when all are present", () => {
+    const json = {
+      thumbnail_height: 150,
+      thumbnail_url: "https://example.com/thumb.jpg",
+      thumbnail_width: 200,
+      title: "Example Link",
+      type: "link",
+      version: "1.0",
+    };
+    const result = parseOEmbedResponse(json);
+    expect(result?.thumbnailUrl).toBe("https://example.com/thumb.jpg");
+    expect(result?.thumbnailWidth).toBe(200);
+    expect(result?.thumbnailHeight).toBe(150);
+  });
+});
+
 describe("extractFromHtml - Multiple oEmbed links", () => {
   const html = `
     <!doctype html>

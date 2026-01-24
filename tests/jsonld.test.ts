@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   extractFromHtml,
   type ExtractSuccess,
+  type JsonLdOrganization,
   type JsonLdPerson,
 } from "../src";
 import { fixtures } from "./data";
@@ -301,5 +302,238 @@ describe("extractFromHtml - JSON-LD with image array", () => {
     expect(images).toHaveLength(2);
     expect(images[0]).toBe("https://example.com/image1.jpg");
     expect(images[1]).toBe("https://example.com/image2.jpg");
+  });
+});
+
+describe("extractFromHtml - JSON-LD @id reference resolution for author", () => {
+  const htmlWithAuthorRef = `
+    <!doctype html>
+    <html>
+    <head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          { "@id": "#author", "@type": "Person", "name": "Jane Doe", "url": "https://example.com/jane" },
+          { "@type": "Article", "headline": "Test Article", "author": { "@id": "#author" } }
+        ]
+      }
+      </script>
+    </head>
+    <body></body>
+    </html>
+  `;
+
+  const result = extractFromHtml(htmlWithAuthorRef, {
+    baseUrl: "https://example.com",
+  }) as ExtractSuccess;
+
+  it("resolves author @id reference", () => {
+    const article = result.data.jsonLd?.items.find(
+      (item) => item.type === "Article"
+    );
+    const author = article?.author as JsonLdPerson | undefined;
+    expect(author).toBeDefined();
+    expect(author?.type).toBe("Person");
+    expect(author?.name).toBe("Jane Doe");
+    expect(author?.url).toBe("https://example.com/jane");
+  });
+});
+
+describe("extractFromHtml - JSON-LD @id reference resolution for publisher", () => {
+  const htmlWithPublisherRef = `
+    <!doctype html>
+    <html>
+    <head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          { "@id": "#org", "@type": "Organization", "name": "Example Corp", "url": "https://example.com", "logo": "https://example.com/logo.png" },
+          { "@type": "Article", "headline": "Test Article", "publisher": { "@id": "#org" } }
+        ]
+      }
+      </script>
+    </head>
+    <body></body>
+    </html>
+  `;
+
+  const result = extractFromHtml(htmlWithPublisherRef, {
+    baseUrl: "https://example.com",
+  }) as ExtractSuccess;
+
+  it("resolves publisher @id reference", () => {
+    const article = result.data.jsonLd?.items.find(
+      (item) => item.type === "Article"
+    );
+    const publisher = article?.publisher as JsonLdOrganization | undefined;
+    expect(publisher).toBeDefined();
+    expect(publisher?.type).toBe("Organization");
+    expect(publisher?.name).toBe("Example Corp");
+    expect(publisher?.url).toBe("https://example.com");
+    expect(publisher?.logo).toBe("https://example.com/logo.png");
+  });
+});
+
+describe("extractFromHtml - JSON-LD with multiple @id references", () => {
+  const htmlWithMultipleRefs = `
+    <!doctype html>
+    <html>
+    <head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          { "@id": "#author1", "@type": "Person", "name": "Author One" },
+          { "@id": "#author2", "@type": "Person", "name": "Author Two" },
+          { "@id": "#publisher", "@type": "Organization", "name": "Publisher Org" },
+          { "@type": "Article", "headline": "Multi-Author Article", "author": [{ "@id": "#author1" }, { "@id": "#author2" }], "publisher": { "@id": "#publisher" } }
+        ]
+      }
+      </script>
+    </head>
+    <body></body>
+    </html>
+  `;
+
+  const result = extractFromHtml(htmlWithMultipleRefs, {
+    baseUrl: "https://example.com",
+  }) as ExtractSuccess;
+
+  it("resolves multiple author @id references", () => {
+    const article = result.data.jsonLd?.items.find(
+      (item) => item.type === "Article"
+    );
+    const authors = article?.author as JsonLdPerson[];
+    expect(Array.isArray(authors)).toBe(true);
+    expect(authors).toHaveLength(2);
+    expect(authors[0].name).toBe("Author One");
+    expect(authors[1].name).toBe("Author Two");
+  });
+
+  it("resolves publisher @id reference alongside author references", () => {
+    const article = result.data.jsonLd?.items.find(
+      (item) => item.type === "Article"
+    );
+    const publisher = article?.publisher as JsonLdOrganization | undefined;
+    expect(publisher?.name).toBe("Publisher Org");
+  });
+});
+
+describe("extractFromHtml - JSON-LD with unresolved @id reference", () => {
+  const htmlWithUnresolvedRef = `
+    <!doctype html>
+    <html>
+    <head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          { "@type": "Article", "headline": "Test Article", "author": { "@id": "#nonexistent" } }
+        ]
+      }
+      </script>
+    </head>
+    <body></body>
+    </html>
+  `;
+
+  const result = extractFromHtml(htmlWithUnresolvedRef, {
+    baseUrl: "https://example.com",
+  }) as ExtractSuccess;
+
+  it("returns undefined for unresolved author reference", () => {
+    const article = result.data.jsonLd?.items.find(
+      (item) => item.type === "Article"
+    );
+    // Author should be undefined since the reference cannot be resolved
+    // and the remaining object has no name
+    expect(article?.author).toBeUndefined();
+  });
+});
+
+describe("extractFromHtml - JSON-LD with full URL @id reference", () => {
+  const htmlWithFullUrlRef = `
+    <!doctype html>
+    <html>
+    <head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          { "@id": "https://example.com/#author", "@type": "Person", "name": "Full URL Author" },
+          { "@type": "Article", "headline": "Test Article", "author": { "@id": "https://example.com/#author" } }
+        ]
+      }
+      </script>
+    </head>
+    <body></body>
+    </html>
+  `;
+
+  const result = extractFromHtml(htmlWithFullUrlRef, {
+    baseUrl: "https://example.com",
+  }) as ExtractSuccess;
+
+  it("resolves full URL @id reference", () => {
+    const article = result.data.jsonLd?.items.find(
+      (item) => item.type === "Article"
+    );
+    const author = article?.author as JsonLdPerson | undefined;
+    expect(author).toBeDefined();
+    expect(author?.name).toBe("Full URL Author");
+  });
+});
+
+describe("extractFromHtml - JSON-LD with nested @graph containing references", () => {
+  const htmlWithNestedGraph = `
+    <!doctype html>
+    <html>
+    <head>
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@id": "#website",
+            "@type": "WebSite",
+            "name": "My Website"
+          },
+          {
+            "@id": "#person",
+            "@type": "Person",
+            "name": "Website Author",
+            "url": "https://example.com/author"
+          },
+          {
+            "@type": "BlogPosting",
+            "headline": "Blog Post Title",
+            "author": { "@id": "#person" }
+          }
+        ]
+      }
+      </script>
+    </head>
+    <body></body>
+    </html>
+  `;
+
+  const result = extractFromHtml(htmlWithNestedGraph, {
+    baseUrl: "https://example.com",
+  }) as ExtractSuccess;
+
+  it("resolves references in nested @graph", () => {
+    const blogPost = result.data.jsonLd?.items.find(
+      (item) => item.type === "BlogPosting"
+    );
+    const author = blogPost?.author as JsonLdPerson | undefined;
+    expect(author).toBeDefined();
+    expect(author?.name).toBe("Website Author");
+    expect(author?.url).toBe("https://example.com/author");
+  });
+
+  it("extracts all items from nested @graph", () => {
+    expect(result.data.jsonLd?.items).toHaveLength(3);
   });
 });

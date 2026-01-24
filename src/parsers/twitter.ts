@@ -117,6 +117,27 @@ const parseApp = ($: CheerioAPI): TwitterApp | undefined => {
   };
 };
 
+interface SiteCreatorData {
+  site?: string;
+  siteId?: string;
+  creator?: string;
+  creatorId?: string;
+}
+
+const parseSiteAndCreator = ($: CheerioAPI): SiteCreatorData => {
+  const site = getMetaContentAny($, "twitter:site");
+  const siteId = getMetaContentAny($, "twitter:site:id");
+  const creator = getMetaContentAny($, "twitter:creator");
+  const creatorId = getMetaContentAny($, "twitter:creator:id");
+
+  return {
+    ...(site && { site }),
+    ...(siteId && { siteId }),
+    ...(creator && { creator }),
+    ...(creatorId && { creatorId }),
+  };
+};
+
 /**
  * Parse Twitter Card metadata from HTML
  * @see https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/markup
@@ -126,8 +147,7 @@ export const parseTwitterCard = (
   baseUrl?: string
 ): TwitterCardData => {
   const card = parseCardType($);
-  const site = getMetaContentAny($, "twitter:site");
-  const creator = getMetaContentAny($, "twitter:creator");
+  const siteCreator = parseSiteAndCreator($);
   const title = getMetaContentAny($, "twitter:title");
   const description = getMetaContentAny($, "twitter:description");
   const image = parseImage($, baseUrl);
@@ -136,8 +156,7 @@ export const parseTwitterCard = (
 
   return {
     ...(card && { card }),
-    ...(site && { site }),
-    ...(creator && { creator }),
+    ...siteCreator,
     ...(title && { title }),
     ...(description && { description }),
     ...(image && { image }),

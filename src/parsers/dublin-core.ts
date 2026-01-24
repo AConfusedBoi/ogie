@@ -1,28 +1,78 @@
 import type { CheerioAPI } from "cheerio";
 
+/**
+ * Dublin Core metadata extracted from HTML.
+ *
+ * This interface includes the 15 core Dublin Core Metadata Element Set (DCMES) fields
+ * plus commonly used DCTERMS extensions.
+ *
+ * **Core DC Elements (DCMES 1.1):**
+ * contributor, coverage, creator, date, description, format, identifier,
+ * language, publisher, relation, rights, source, subject, title, type
+ *
+ * **DCTERMS Extensions:**
+ * - `audience` - A class of agents for whom the resource is intended
+ *
+ * @see https://www.dublincore.org/specifications/dublin-core/dcmi-terms/
+ */
 export interface DublinCoreData {
+  // Core DC Elements (DCMES 1.1)
+  /** The name given to the resource */
   title?: string;
+  /** An entity primarily responsible for making the resource */
   creator?: string | string[];
+  /** The topic of the resource */
   subject?: string | string[];
+  /** An account of the resource */
   description?: string;
+  /** An entity responsible for making the resource available */
   publisher?: string;
+  /** An entity responsible for making contributions to the resource */
   contributor?: string | string[];
+  /** A point or period of time associated with the resource */
   date?: string;
+  /** The nature or genre of the resource */
   type?: string;
+  /** The file format, physical medium, or dimensions of the resource */
   format?: string;
+  /** An unambiguous reference to the resource */
   identifier?: string | string[];
+  /** A related resource from which the described resource is derived */
   source?: string;
+  /** A language of the resource */
   language?: string;
+  /** A related resource */
   relation?: string | string[];
+  /** The spatial or temporal topic of the resource */
   coverage?: string;
+  /** Information about rights held in and over the resource */
   rights?: string;
+
+  // DCTERMS Extensions
+  /** A class of agents for whom the resource is intended (DCTERMS, not core DC) */
   audience?: string;
 }
 
 type DublinCoreField = keyof DublinCoreData;
 
+/**
+ * Supported Dublin Core fields.
+ *
+ * Includes the 15 core DCMES 1.1 elements plus common DCTERMS extensions:
+ * - Core DC: contributor, coverage, creator, date, description, format,
+ *   identifier, language, publisher, relation, rights, source, subject, title, type
+ * - DCTERMS: audience
+ *
+ * **Intentionally omitted DCTERMS properties:**
+ * These specialized properties are rarely used in web metadata and are not mapped:
+ * - educationLevel - Could map to audience but semantically distinct
+ * - instructionalMethod - Too specialized for general metadata extraction
+ * - accrualMethod, accrualPeriodicity, accrualPolicy - Collection management terms
+ */
 const DC_FIELDS = new Set<DublinCoreField>([
+  // DCTERMS extension
   "audience",
+  // Core DC Elements (DCMES 1.1)
   "contributor",
   "coverage",
   "creator",
