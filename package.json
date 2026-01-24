@@ -1,6 +1,6 @@
 {
   "name": "ogie",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lightweight OpenGraph and metadata scraper for websites",
   "keywords": [
     "link-preview",
