@@ -46,6 +46,12 @@
     "bump": "bumpp --changelog",
     "release": "bun publish"
   },
+  "dependencies": {
+    "bottleneck": "^2.19.5",
+    "cheerio": "^1.2.0",
+    "iconv-lite": "^0.7.2",
+    "quick-lru": "^7.3.0"
+  },
   "devDependencies": {
     "@commitlint/cli": "^20.3.1",
     "@commitlint/config-conventional": "^20.3.1",

@@ -1,135 +1,385 @@
-# 📦 npm-ts-start
+# 🔮 Ogie
 
-A minimal starter template for creating npm packages in pure TypeScript.
+> Lightweight, production-ready OpenGraph and metadata extraction for Node.js
+
+[![npm version](https://img.shields.io/npm/v/ogie.svg)](https://www.npmjs.com/package/ogie)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+
+**Ogie** extracts rich metadata from any webpage — OpenGraph, Twitter Cards, JSON-LD, Dublin Core, and more. Built with TypeScript, zero-config, and blazing fast.
 
 ## ✨ Features
 
-- 🔷 **TypeScript** - Write type-safe code with full TypeScript support
-- ⚡ **tsdown** - Fast bundling powered by Rolldown
-- 🧪 **Bun Test** - Fast built-in test runner
-- 🎨 **Ultracite** - Zero-config linting and formatting with Oxlint + Oxfmt
-- 📦 **ESM** - Ships as ES modules with TypeScript declarations
-- 🚀 **GitHub Actions** - CI/CD pipeline with automated testing and npm publishing
-- 🐶 **Husky** - Pre-commit hooks for code quality enforcement
-- 📝 **Commitlint** - Conventional commit message validation
+- 🎯 **Comprehensive Extraction** — OpenGraph, Twitter Cards, JSON-LD, Dublin Core, Article metadata, App Links, oEmbed
+- 🚀 **High Performance** — LRU caching with TTL, bulk extraction with rate limiting
+- 🔒 **Secure by Default** — SSRF protection, private IP blocking, URL validation
+- 📦 **Minimal Dependencies** — Just 4 production deps (cheerio, quick-lru, bottleneck, iconv-lite)
+- 🎨 **TypeScript First** — Full type safety with exported interfaces
+- ⚡ **Smart Fallbacks** — Automatically fills missing OG data from Twitter Cards and meta tags
 
-## 🚀 Getting Started
-
-1. Clone or use this template:
+## 📥 Installation
 
 ```bash
-git clone https://github.com/dobroslavradosavljevic/npm-ts-start.git my-package
-cd my-package
+# npm
+npm install ogie
+
+# yarn
+yarn add ogie
+
+# pnpm
+pnpm add ogie
+
+# bun
+bun add ogie
 ```
 
-2. Update `package.json` with your package name, description, and author info.
+## 🚀 Quick Start
 
-3. Install dependencies:
+```typescript
+import { extract } from "ogie";
+
+const result = await extract("https://github.com");
+
+if (result.success) {
+  console.log(result.data.og.title); // "GitHub: Let's build from here"
+  console.log(result.data.og.description); // "GitHub is where..."
+  console.log(result.data.og.images[0]); // { url: "https://..." }
+}
+```
+
+## 📖 API
+
+### `extract(url, options?)`
+
+Fetches a URL and extracts all metadata.
+
+```typescript
+import { extract } from "ogie";
+
+const result = await extract("https://example.com", {
+  timeout: 10000, // Request timeout (ms)
+  maxRedirects: 5, // Max redirects to follow
+  userAgent: "MyBot/1.0", // Custom User-Agent
+  fetchOEmbed: true, // Fetch oEmbed endpoint
+  convertCharset: true, // Auto-detect and convert charset
+});
+
+if (result.success) {
+  const { data } = result;
+  // Access metadata...
+} else {
+  console.error(result.error.code); // "INVALID_URL", "FETCH_ERROR", etc.
+}
+```
+
+### `extractFromHtml(html, options?)`
+
+Extracts metadata from an HTML string (no network request).
+
+```typescript
+import { extractFromHtml } from "ogie";
+
+const html = `
+  <html>
+  <head>
+    <meta property="og:title" content="My Page">
+    <meta property="og:image" content="https://example.com/image.jpg">
+  </head>
+  </html>
+`;
+
+const result = extractFromHtml(html, {
+  baseUrl: "https://example.com", // For resolving relative URLs
+});
+```
+
+### `extractBulk(urls, options?)`
+
+Extracts metadata from multiple URLs with rate limiting.
+
+```typescript
+import { extractBulk } from "ogie";
+
+const urls = [
+  "https://github.com",
+  "https://twitter.com",
+  "https://youtube.com",
+];
+
+const result = await extractBulk(urls, {
+  concurrency: 10, // Max parallel requests
+  concurrencyPerDomain: 3, // Max parallel per domain
+  minDelayPerDomain: 200, // Min ms between same-domain requests
+  requestsPerMinute: 600, // Global rate limit
+  continueOnError: true, // Don't stop on failures
+  onProgress: (p) => {
+    console.log(`${p.completed}/${p.total} done`);
+  },
+});
+
+console.log(`✅ ${result.stats.succeeded} succeeded`);
+console.log(`❌ ${result.stats.failed} failed`);
+console.log(`⏱️ ${result.totalDurationMs}ms total`);
+```
+
+### `createCache(options?)`
+
+Creates a reusable LRU cache for extraction results.
+
+```typescript
+import { extract, createCache } from "ogie";
+
+const cache = createCache({
+  maxSize: 100, // Max cached items
+  ttl: 300_000, // 5 minutes TTL
+  onEviction: (key, value) => {
+    console.log(`Evicted: ${key}`);
+  },
+});
+
+// First call fetches from network
+const result1 = await extract("https://github.com", { cache });
+
+// Second call returns cached result instantly
+const result2 = await extract("https://github.com", { cache });
+
+// Force fresh fetch (but still cache the result)
+const result3 = await extract("https://github.com", {
+  cache,
+  bypassCache: true,
+});
+```
+
+## 📊 Extracted Metadata
+
+Ogie extracts metadata from **8 different sources**:
+
+### 🌐 OpenGraph (`data.og`)
+
+```typescript
+{
+  title: "Page Title",
+  description: "Page description",
+  type: "website",
+  url: "https://example.com",
+  siteName: "Example",
+  locale: "en_US",
+  images: [{ url, width, height, alt }],
+  videos: [{ url, width, height, type }],
+  audio: [{ url, type }],
+}
+```
+
+### 🐦 Twitter Cards (`data.twitter`)
+
+```typescript
+{
+  card: "summary_large_image",
+  site: "@example",
+  creator: "@author",
+  title: "Tweet Title",
+  description: "Tweet description",
+  image: { url, alt },
+  player: { url, width, height },
+  app: { iphone, ipad, googleplay },
+}
+```
+
+### 📝 Basic Meta (`data.basic`)
+
+```typescript
+{
+  title: "Document Title",
+  description: "Meta description",
+  canonical: "https://example.com/page",
+  favicon: "https://example.com/favicon.ico",
+  favicons: [{ url, rel, sizes, type }],
+  author: "John Doe",
+  keywords: "tag1, tag2",
+  themeColor: "#ffffff",
+  viewport: "width=device-width",
+}
+```
+
+### 📰 Article (`data.article`)
+
+```typescript
+{
+  publishedTime: "2024-01-15T10:00:00Z",
+  modifiedTime: "2024-01-16T12:00:00Z",
+  author: ["Jane Doe"],
+  section: "Technology",
+  tags: ["javascript", "web"],
+}
+```
+
+### 🔗 JSON-LD (`data.jsonLd`)
+
+```typescript
+{
+  items: [{
+    type: "Article",
+    name: "Article Title",
+    author: { type: "Person", name: "Jane" },
+    datePublished: "2024-01-15",
+  }],
+  raw: [/* original parsed objects */],
+}
+```
+
+### 📚 Dublin Core (`data.dublinCore`)
+
+```typescript
+{
+  title: "Document Title",
+  creator: ["Author Name"],
+  subject: ["Topic"],
+  publisher: "Publisher Name",
+  date: "2024-01-15",
+  language: "en",
+  rights: "CC BY 4.0",
+}
+```
+
+### 📱 App Links (`data.appLinks`)
+
+```typescript
+{
+  ios: [{ url, appStoreId, appName }],
+  android: [{ url, package, appName }],
+  web: [{ url, shouldFallback }],
+}
+```
+
+### 🎬 oEmbed (`data.oEmbed`)
+
+```typescript
+{
+  type: "video",
+  title: "Video Title",
+  html: "<iframe ...></iframe>",
+  width: 640,
+  height: 360,
+  providerName: "YouTube",
+  thumbnailUrl: "https://...",
+}
+```
+
+## ⚙️ Options Reference
+
+### ExtractOptions
+
+| Option             | Type                     | Default    | Description                 |
+| ------------------ | ------------------------ | ---------- | --------------------------- |
+| `timeout`          | `number`                 | `10000`    | Request timeout in ms       |
+| `maxRedirects`     | `number`                 | `5`        | Max redirects to follow     |
+| `userAgent`        | `string`                 | `ogie/1.0` | Custom User-Agent           |
+| `headers`          | `Record<string, string>` | `{}`       | Custom HTTP headers         |
+| `baseUrl`          | `string`                 | —          | Base URL for relative URLs  |
+| `onlyOpenGraph`    | `boolean`                | `false`    | Skip fallback parsing       |
+| `allowPrivateUrls` | `boolean`                | `false`    | Allow localhost/private IPs |
+| `fetchOEmbed`      | `boolean`                | `false`    | Fetch oEmbed endpoint       |
+| `convertCharset`   | `boolean`                | `false`    | Auto charset conversion     |
+| `cache`            | `MetadataCache \| false` | —          | Cache instance              |
+| `bypassCache`      | `boolean`                | `false`    | Force fresh fetch           |
+
+### BulkOptions
+
+| Option                 | Type       | Default | Description                    |
+| ---------------------- | ---------- | ------- | ------------------------------ |
+| `concurrency`          | `number`   | `10`    | Max parallel requests          |
+| `concurrencyPerDomain` | `number`   | `3`     | Max parallel per domain        |
+| `minDelayPerDomain`    | `number`   | `200`   | Min ms between domain requests |
+| `requestsPerMinute`    | `number`   | `600`   | Global rate limit              |
+| `timeout`              | `number`   | `30000` | Timeout per request            |
+| `continueOnError`      | `boolean`  | `true`  | Continue on failures           |
+| `onProgress`           | `function` | —       | Progress callback              |
+
+### CacheOptions
+
+| Option       | Type       | Default  | Description       |
+| ------------ | ---------- | -------- | ----------------- |
+| `maxSize`    | `number`   | `100`    | Max cached items  |
+| `ttl`        | `number`   | `300000` | TTL in ms (5 min) |
+| `onEviction` | `function` | —        | Eviction callback |
+
+## 🛡️ Error Handling
+
+Ogie uses a discriminated union result type for type-safe error handling:
+
+```typescript
+import { extract, isFetchError, isParseError } from "ogie";
+
+const result = await extract(url);
+
+if (!result.success) {
+  const { error } = result;
+
+  switch (error.code) {
+    case "INVALID_URL":
+      console.log("Invalid URL format");
+      break;
+    case "FETCH_ERROR":
+      console.log("Network error");
+      break;
+    case "TIMEOUT":
+      console.log("Request timed out");
+      break;
+    case "PARSE_ERROR":
+      console.log("Failed to parse HTML");
+      break;
+  }
+
+  // Or use type guards
+  if (isFetchError(error)) {
+    console.log(`HTTP ${error.statusCode}`);
+  }
+}
+```
+
+## 🔐 Security
+
+Ogie includes built-in security protections:
+
+- **SSRF Protection** — Blocks requests to private/internal IP ranges by default
+- **URL Validation** — Only allows HTTP/HTTPS protocols
+- **Redirect Limits** — Configurable max redirects (default: 5)
+- **oEmbed Validation** — Validates oEmbed endpoints before fetching
+
+To allow private URLs (for testing):
+
+```typescript
+await extract("http://localhost:3000", {
+  allowPrivateUrls: true,
+});
+```
+
+## 📦 Bundle Size
+
+| Dependency | Size (gzip) |
+| ---------- | ----------- |
+| cheerio    | ~70 KB      |
+| quick-lru  | ~0.5 KB     |
+| bottleneck | ~12 KB      |
+| iconv-lite | ~45 KB      |
+| **Total**  | ~130 KB     |
+
+## 🧪 Testing
 
 ```bash
-bun install
-```
+# Run tests
+bun test
 
-4. Start developing in `src/index.ts`.
-
-## 📜 Scripts
-
-| Command             | Description                         |
-| ------------------- | ----------------------------------- |
-| `bun run build`     | Build the package                   |
-| `bun run dev`       | Build in watch mode                 |
-| `bun run test`      | Run tests                           |
-| `bun run lint`      | Check for linting issues            |
-| `bun run format`    | Fix linting and formatting issues   |
-| `bun run typecheck` | Run TypeScript type checking        |
-| `bun run bump`      | Bump version and generate changelog |
-
-## 📁 Project Structure
-
-```txt
-├── src/
-│   └── index.ts          # Package entry point
-├── tests/
-│   └── index.test.ts     # Test files
-├── dist/                 # Build output (generated)
-├── .github/
-│   └── workflows/
-│       ├── ci.yml        # CI pipeline (lint, test, build)
-│       └── release.yml   # Automated npm publishing
-├── .husky/
-│   ├── pre-commit        # Runs lint-staged before commits
-│   └── commit-msg        # Validates commit messages
-├── tsdown.config.ts      # Build configuration
-├── tsconfig.json         # TypeScript configuration
-├── commitlint.config.ts  # Commit message rules
-└── package.json
-```
-
-## 🐶 Git Hooks
-
-This template uses Husky for Git hooks:
-
-- **pre-commit**: Runs `lint-staged` to lint and format staged files
-- **commit-msg**: Validates commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
-
-### Commit Message Format
-
-```
-type(scope): description
-
-# Examples:
-feat: add new feature
-fix: resolve bug in parser
-docs: update README
-chore: update dependencies
-```
-
-## 🔄 CI/CD
-
-### Continuous Integration
-
-On every push to `main` and pull request, the CI workflow runs:
-
-- ✅ Lint check
-- ✅ Type check
-- ✅ Tests
-- ✅ Build
-
-### Automated Releases
-
-When you push a version tag (`v*`), the release workflow:
-
-1. Runs all CI checks
-2. Publishes to npm with provenance
-3. Creates a GitHub release with auto-generated notes
-
-### Setup for Publishing
-
-Add `NPM_TOKEN` to your repository secrets:
-
-1. Go to **Settings** > **Secrets and variables** > **Actions**
-2. Add `NPM_TOKEN` with your npm automation token
-
-## 🚢 Publishing
-
-1. Bump the version (creates a tag):
-
-```bash
-bun run bump
-```
-
-2. Push the tag to trigger the release workflow:
-
-```bash
-git push --tags
-```
-
-Or publish manually:
-
-```bash
-bun publish
+# Run with coverage
+bun test --coverage
 ```
 
 ## 📄 License
 
-MIT
+MIT © [Dobroslav Radosavljevic](https://github.com/dobroslavradosavljevic)
+
+---
+
+<p align="center">
+  Made with ❤️ for the web scraping community
+</p>
