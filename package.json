@@ -1,21 +1,27 @@
 {
-  "name": "npm-ts-start",
-  "version": "1.0.0",
-  "description": "A starter for creating a TypeScript npm package.",
+  "name": "ogie",
+  "version": "0.1.1",
+  "description": "Lightweight OpenGraph and metadata scraper for websites",
   "keywords": [
-    "npm",
-    "package",
-    "typescript"
+    "link-preview",
+    "meta",
+    "metadata",
+    "og",
+    "opengraph",
+    "parser",
+    "scraper",
+    "seo",
+    "twitter-card"
   ],
-  "homepage": "https://github.com/dobroslavradosavljevic/npm-ts-start#readme",
+  "homepage": "https://github.com/dobroslavradosavljevic/ogie#readme",
   "bugs": {
-    "url": "https://github.com/dobroslavradosavljevic/npm-ts-start/issues"
+    "url": "https://github.com/dobroslavradosavljevic/ogie/issues"
   },
   "license": "MIT",
   "author": "Dobroslav Radosavljevic <dobroslav.radosavljevic@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dobroslavradosavljevic/npm-ts-start.git"
+    "url": "git+https://github.com/dobroslavradosavljevic/ogie.git"
   },
   "files": [
     "dist"
