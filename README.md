@@ -1,4 +1,4 @@
-# ogie 🔮
+# 🔮 ogie
 
 > Lightweight, production-ready OpenGraph and metadata extraction for Node.js
 
