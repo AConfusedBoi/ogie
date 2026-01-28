@@ -8,6 +8,7 @@ import type { AppLinksData } from "./parsers/app-links";
 import type { ArticleData } from "./parsers/article";
 import type { BookData } from "./parsers/book";
 import type { DublinCoreData } from "./parsers/dublin-core";
+import type { FeedsData } from "./parsers/feeds";
 import type { JsonLdData } from "./parsers/jsonld";
 import type { MusicData } from "./parsers/music";
 import type { ProfileData } from "./parsers/profile";
@@ -477,6 +478,9 @@ export interface Metadata {
 
   /** oEmbed data (only populated if fetchOEmbed option is true) */
   oEmbed?: OEmbedData;
+
+  /** RSS/Atom/JSON feed links discovered in HTML */
+  feeds?: FeedsData;
 
   /** HTTP status code from the response */
   statusCode?: number;

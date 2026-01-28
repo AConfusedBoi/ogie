@@ -29,3 +29,5 @@ export { parseOpenGraph } from "./opengraph";
 export { parseTwitterCard } from "./twitter";
 export { parseVideo } from "./video";
 export type { VideoActor, VideoData } from "./video";
+export { hasFeeds, parseFeeds } from "./feeds";
+export type { FeedLink, FeedsData, FeedType } from "./feeds";

@@ -13,7 +13,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -37,8 +37,8 @@ jobs:
       - name: Type check
         run: bun run typecheck
 
-      - name: Test
-        run: bun run test
-
       - name: Build
         run: bun run build
+
+      - name: Test
+        run: bun run test

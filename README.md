@@ -10,7 +10,7 @@ A comprehensive metadata extraction library that pulls OpenGraph, Twitter Cards,
 
 ## ✨ Features
 
-- 🎯 **Comprehensive Extraction** — OpenGraph, Twitter Cards, JSON-LD, Dublin Core, Article, Video, Music, Book, Profile, App Links, oEmbed
+- 🎯 **Comprehensive Extraction** — OpenGraph, Twitter Cards, JSON-LD, Dublin Core, Article, Video, Music, Book, Profile, App Links, oEmbed, RSS/Atom Feeds
 - 🚀 **High Performance** — LRU caching with TTL, bulk extraction with smart rate limiting
 - 🔒 **Secure by Default** — SSRF protection, private IP blocking, URL validation
 - 📦 **Minimal Dependencies** — Just 4 production deps (cheerio, quick-lru, bottleneck, iconv-lite)
@@ -227,7 +227,7 @@ console.log(key1 === key3); // false
 
 ## 📊 Extracted Metadata
 
-Ogie extracts metadata from **12 different sources**:
+Ogie extracts metadata from **13 different sources**:
 
 ### 🌐 OpenGraph (`data.og`)
 
@@ -572,6 +572,43 @@ Discovered oEmbed endpoints (always populated, fetch controlled by `fetchOEmbed`
 }
 ```
 
+### 📡 RSS/Atom Feeds (`data.feeds`)
+
+Discovered RSS, Atom, and JSON Feed links from the page.
+
+```typescript
+{
+  feeds: [
+    {
+      url: "https://example.com/feed.xml",
+      type: "rss", // "rss" | "atom" | "json"
+      title: "Blog RSS Feed",
+    },
+    {
+      url: "https://example.com/atom.xml",
+      type: "atom",
+      title: "Blog Atom Feed",
+    },
+    {
+      url: "https://example.com/feed.json",
+      type: "json", // title is optional
+    },
+  ];
+}
+```
+
+**Supported MIME types:**
+
+| MIME Type                | Feed Type |
+| ------------------------ | --------- |
+| `application/rss+xml`    | `rss`     |
+| `application/x-rss+xml`  | `rss`     |
+| `text/rss+xml`           | `rss`     |
+| `application/atom+xml`   | `atom`    |
+| `application/x-atom+xml` | `atom`    |
+| `text/atom+xml`          | `atom`    |
+| `application/feed+json`  | `json`    |
+
 ## ⚙️ Options Reference
 
 ### ExtractOptions
@@ -726,6 +763,11 @@ import type {
   OEmbedRich,
   OEmbedLink,
   OEmbedDiscovery,
+
+  // Feed types
+  FeedsData,
+  FeedLink,
+  FeedType,
 
   // Cache types
   MetadataCache,

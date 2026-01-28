@@ -69,6 +69,8 @@ export type { ProfileData, ProfileGender } from "./parsers/profile";
 
 export type { VideoActor, VideoData } from "./parsers/video";
 
+export type { FeedLink, FeedsData, FeedType } from "./parsers/feeds";
+
 export type {
   JsonLdData,
   JsonLdItem,

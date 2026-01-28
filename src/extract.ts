@@ -16,6 +16,7 @@ import { parseArticle } from "./parsers/article";
 import { parseBasicMeta } from "./parsers/basic";
 import { parseBook } from "./parsers/book";
 import { parseDublinCore } from "./parsers/dublin-core";
+import { hasFeeds, parseFeeds } from "./parsers/feeds";
 import { parseJsonLd } from "./parsers/jsonld";
 import { parseMusic } from "./parsers/music";
 import {
@@ -48,6 +49,7 @@ interface ParsedHtml {
   basic: ReturnType<typeof parseBasicMeta>;
   book: ReturnType<typeof parseBook>;
   dublinCore: ReturnType<typeof parseDublinCore>;
+  feeds: ReturnType<typeof parseFeeds>;
   jsonLd: ReturnType<typeof parseJsonLd>;
   music: ReturnType<typeof parseMusic>;
   oEmbedDiscovery: OEmbedDiscovery;
@@ -66,6 +68,7 @@ const parseHtml = (html: string, baseUrl?: string): ParsedHtml => {
     basic: parseBasicMeta($, baseUrl),
     book: parseBook($),
     dublinCore: parseDublinCore($),
+    feeds: parseFeeds($, baseUrl),
     jsonLd: parseJsonLd($),
     music: parseMusic($),
     oEmbedDiscovery: parseOEmbedDiscovery($),
@@ -133,6 +136,7 @@ const buildMetadataFromParsed = ({
     article,
     appLinks,
     book,
+    feeds,
     jsonLd,
     music,
     oEmbedDiscovery,
@@ -153,6 +157,7 @@ const buildMetadataFromParsed = ({
     charset,
     contentType,
     dublinCore: hasData(dublinCore) ? dublinCore : undefined,
+    feeds: hasFeeds(feeds) ? feeds : undefined,
     finalUrl,
     jsonLd: jsonLd.items.length > 0 ? jsonLd : undefined,
     music: hasData(music) ? music : undefined,
