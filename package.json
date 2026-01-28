@@ -13,15 +13,15 @@
     "seo",
     "twitter-card"
   ],
-  "homepage": "https://github.com/dobroslavradosavljevic/ogie#readme",
+  "homepage": "https://github.com/DobroslavRadosavljevic/ogie#readme",
   "bugs": {
-    "url": "https://github.com/dobroslavradosavljevic/ogie/issues"
+    "url": "https://github.com/DobroslavRadosavljevic/ogie/issues"
   },
   "license": "MIT",
   "author": "Dobroslav Radosavljevic <dobroslav.radosavljevic@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dobroslavradosavljevic/ogie.git"
+    "url": "https://github.com/DobroslavRadosavljevic/ogie"
   },
   "files": [
     "dist"
