@@ -90,7 +90,9 @@ describe("extractFromHtml - JSON-LD publisher extraction", () => {
     expect(publisher?.type).toBe("Organization");
     expect(publisher?.name).toBe("Example Publisher");
     expect(publisher?.url).toBe("https://example.com");
-    expect(publisher?.logo).toBe("https://example.com/logo.png");
+    expect((publisher as JsonLdOrganization)?.logo).toBe(
+      "https://example.com/logo.png"
+    );
   });
 
   it("stores raw JSON-LD", () => {

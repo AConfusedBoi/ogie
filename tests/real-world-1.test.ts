@@ -369,7 +369,7 @@ describe("Real-World: Amazon Product", () => {
       | Record<string, unknown>
       | undefined;
     expect(rating).toBeDefined();
-    expect(rating.ratingValue).toBe("4.3");
+    expect(rating?.ratingValue).toBe("4.3");
   });
 
   it("extracts canonical URL", () => {

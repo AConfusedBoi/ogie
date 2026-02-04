@@ -18,6 +18,7 @@ A comprehensive metadata extraction library that pulls OpenGraph, Twitter Cards,
 - ⚡ **Smart Fallbacks** — Automatically fills missing OG data from Twitter Cards and meta tags
 - 🌐 **Charset Detection** — Auto-detect and convert non-UTF-8 pages
 - 📊 **Bulk Processing** — Process hundreds of URLs with per-domain rate limiting
+- 🔤 **Case-Insensitive Parsing** — Handles meta tags regardless of attribute casing
 
 ## 🤖 AI Agent Skill
 
@@ -653,7 +654,15 @@ Discovered RSS, Atom, and JSON Feed links from the page.
 Ogie uses a discriminated union result type for type-safe error handling:
 
 ```typescript
-import { extract, isFetchError, isParseError, isOgieError } from "ogie";
+import {
+  extract,
+  OgieError,
+  FetchError,
+  ParseError,
+  isFetchError,
+  isParseError,
+  isOgieError,
+} from "ogie";
 
 const result = await extract(url);
 
@@ -682,24 +691,38 @@ if (!result.success) {
       break;
   }
 
-  // Or use type guards
+  // Use static type guards (cross-realm safe, uses duck-typing instead of instanceof)
+  if (FetchError.is(error)) {
+    console.log(`HTTP Status: ${error.statusCode}`);
+  }
+
+  if (ParseError.is(error)) {
+    console.log(`Parse failed: ${error.message}`);
+  }
+
+  // Standalone type guard functions also work
   if (isFetchError(error)) {
     console.log(`HTTP Status: ${error.statusCode}`);
   }
 
-  if (isParseError(error)) {
-    console.log(`Parse failed: ${error.message}`);
-  }
+  // Serialize error to plain object
+  console.log(JSON.stringify(error.toJSON()));
 }
 ```
 
 ### Error Types
 
-| Error Class  | Description         | Properties             |
-| ------------ | ------------------- | ---------------------- |
-| `OgieError`  | Base error class    | `code`, `url`, `cause` |
-| `FetchError` | Network/HTTP errors | `statusCode`           |
-| `ParseError` | HTML parsing errors | —                      |
+| Error Class  | Description         | Properties                     |
+| ------------ | ------------------- | ------------------------------ |
+| `OgieError`  | Base error class    | `code`, `url`, `cause`, `_tag` |
+| `FetchError` | Network/HTTP errors | `statusCode`, `_tag`           |
+| `ParseError` | HTML parsing errors | `_tag`                         |
+
+Each error class provides:
+
+- **`_tag`** — Discriminant property for cross-realm type identification (`"OgieError"`, `"FetchError"`, `"ParseError"`)
+- **`static is(error)`** — Cross-realm type guard using duck-typing (e.g., `FetchError.is(err)`)
+- **`toJSON()`** — Serializes the error to a plain object
 
 ## 📦 Exported Types
 
@@ -756,6 +779,7 @@ import type {
   AppLinksWeb,
 
   // oEmbed types
+  OEmbedBase,
   OEmbedData,
   OEmbedType,
   OEmbedPhoto,
@@ -792,6 +816,11 @@ Ogie includes built-in security protections:
 - 🔗 **URL Validation** — Only allows HTTP/HTTPS protocols
 - 🔄 **Redirect Limits** — Configurable max redirects (default: 5)
 - ✅ **oEmbed Validation** — Validates oEmbed endpoints before fetching
+- 🚫 **Header Injection Protection** — Blocks headers containing `\r` or `\n` characters
+- 🔒 **HTTPS Downgrade Protection** — Prevents HTTPS→HTTP protocol downgrade during redirects
+- 🔃 **Redirect Loop Detection** — Detects and blocks circular redirect chains
+- 📏 **Response Size Limits** — Caps response size at 10MB to prevent memory exhaustion
+- ⚙️ **Options Validation** — Validates `timeout` (positive number) and `maxRedirects` (non-negative integer)
 
 ```typescript
 // Allow private URLs (for testing/development only)
@@ -802,15 +831,20 @@ await extract("http://localhost:3000", {
 
 ## 🧪 Testing
 
+Comprehensive test suite with 28+ test files covering edge cases, real-world site scenarios (YouTube, GitHub, Medium, NYTimes, Reddit, etc.), security (XSS, SSRF), encoding, URL handling, JSON-LD, OpenGraph, Twitter Cards, Dublin Core, App Links, structured types (music, video, book, profile), feeds/oEmbed, favicons, and fallback behavior.
+
 ```bash
-# Run tests
+# Run all tests
 bun test
 
 # Run with coverage
 bun test --coverage
 
-# Run specific test file
-bun test tests/extract.test.ts
+# Run specific test suites
+bun test tests/security.test.ts
+bun test tests/real-world-1.test.ts
+bun test tests/opengraph-edge-cases.test.ts
+bun test tests/jsonld-edge-cases.test.ts
 ```
 
 ## 📄 License
